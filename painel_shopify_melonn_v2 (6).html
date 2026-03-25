@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Pedidos — Shopify × Melonn</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f7f5;--sf:#fff;--bd:#e8e8e4;--bd2:#f0f0ec;
+  --t:#111110;--t2:#6b6b63;--t3:#a8a89e;
+  --bl:#1a56db;--blb:#eff4ff;--bll:#dbeafe;
+  --gr:#16a34a;--grb:#f0fdf4;--grl:#bbf7d0;
+  --rd:#dc2626;--rdb:#fef2f2;--rdl:#fecaca;
+  --am:#d97706;--amb:#fffbeb;--aml:#fde68a;
+  --pu:#7c3aed;--pub:#f5f3ff;--pul:#ede9fe;
+  --cy:#0891b2;--cyb:#ecfeff;--cyl:#cffafe;
+  --r:10px;--rs:7px;
+  --sh:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --sh2:0 4px 16px rgba(0,0,0,.08);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t);font-size:14px;line-height:1.5}
+
+/* TOP BAR */
+.topbar{background:var(--sf);border-bottom:1px solid var(--bd);padding:0 2rem;display:flex;align-items:center;gap:1rem;height:54px;position:sticky;top:0;z-index:100;box-shadow:var(--sh)}
+.topbar-ic{width:30px;height:30px;background:var(--bl);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.topbar h1{font-size:14px;font-weight:700;letter-spacing:-.01em}
+.topbar-sub{font-size:12px;color:var(--t3);padding-left:8px;border-left:1px solid var(--bd);margin-left:4px}
+.topbar-ts{margin-left:auto;font-size:11px;color:var(--t3);font-family:'DM Mono',monospace}
+.topbar-cot{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:5px 12px;margin-left:auto}
+.topbar-cot label{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.topbar-cot input{border:none;background:transparent;font-size:13px;font-weight:700;color:var(--bl);width:80px;text-align:right;font-family:'DM Mono',monospace;outline:none}
+.topbar-cot input:focus{color:var(--t)}
+.topbar-cot-hint{font-size:10px;color:var(--t3);white-space:nowrap;font-family:'DM Mono',monospace}
+
+.wrap{max-width:1280px;margin:0 auto;padding:1.5rem 2rem}
+
+/* UPLOAD */
+.upload-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.ucard{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:1rem;box-shadow:var(--sh)}
+.uc-label{font-size:10px;font-weight:700;color:var(--t3);margin-bottom:8px;display:flex;align-items:center;gap:7px;text-transform:uppercase;letter-spacing:.06em}
+.uc-num{width:18px;height:18px;border-radius:50%;background:var(--bll);color:var(--bl);font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.drop{border:1.5px dashed var(--bd);border-radius:var(--rs);padding:16px 8px;text-align:center;cursor:pointer;transition:all .18s;background:var(--bg)}
+.drop:hover,.drop.over{background:var(--blb);border-color:var(--bl)}
+.drop input{display:none}
+.di{font-size:20px;margin-bottom:4px;display:block}
+.dt{font-size:12px;color:var(--t3)}.dt.ok{color:var(--gr);font-weight:600}
+
+/* SKU COSTS */
+.sku-sec{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:1rem;margin-bottom:12px;box-shadow:var(--sh)}
+.sec-lbl{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.sku-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.sku-item label{font-size:11px;color:var(--t2);display:block;margin-bottom:4px;font-weight:600}
+.sku-item input{border:1px solid var(--bd);border-radius:6px;padding:6px 9px;font-size:13px;font-weight:600;background:var(--bg);color:var(--t);width:100%;text-align:right;font-family:'DM Mono',monospace}
+.sku-item input:focus{outline:none;border-color:var(--pu);background:#fff}
+
+/* BUTTONS */
+.run-row{display:flex;gap:8px;align-items:center;margin-bottom:14px}
+.btn{border:1px solid var(--bd);border-radius:var(--rs);padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;background:var(--sf);color:var(--t);transition:all .15s;font-family:'DM Sans',sans-serif;box-shadow:var(--sh)}
+.btn:hover{background:var(--bg)}.btn:disabled{opacity:.4;cursor:default}
+.btn-go{background:var(--bl);border-color:var(--bl);color:#fff}.btn-go:hover{background:#1749b1}
+.err{font-size:12px;color:var(--rd);font-weight:500}
+
+/* PROGRESS */
+.prog{display:none;margin-bottom:12px}
+.prog-lbl{font-size:11px;color:var(--t3);margin-bottom:5px;font-family:'DM Mono',monospace}
+.prog-bg{background:var(--bd2);border-radius:20px;height:4px;overflow:hidden}
+.prog-bar{height:100%;background:var(--bl);border-radius:20px;transition:width .3s ease}
+
+.results{display:none}
+
+/* MAIN TABS (Visão / Pagamento) */
+.main-tabs{display:flex;gap:6px;margin-bottom:14px}
+.main-tab{padding:8px 20px;border-radius:var(--rs);font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--sf);color:var(--t2);transition:all .15s}
+.main-tab.on{background:var(--bl);border-color:var(--bl);color:#fff}
+
+/* PERIOD TABS */
+.ptabs{display:flex;border-bottom:1px solid var(--bd);margin-bottom:12px;background:var(--sf);border-radius:var(--r) var(--r) 0 0;padding:0 1rem;box-shadow:var(--sh)}
+.ptab{font-size:12px;font-weight:500;padding:10px 14px;cursor:pointer;color:var(--t2);border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s}
+.ptab:hover{color:var(--t)}.ptab.on{color:var(--bl);border-bottom-color:var(--bl);font-weight:700}
+
+/* TM CARDS */
+.tm-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
+.tm-card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:1rem 1.2rem;display:flex;justify-content:space-between;align-items:flex-start;box-shadow:var(--sh)}
+.tm-lbl{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.tm-val{font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.tm-sub{font-size:10px;color:var(--t3);margin-top:5px;font-family:'DM Mono',monospace}
+.tm-badge{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:700;white-space:nowrap}
+.tbg{background:var(--grl);color:var(--gr)}.tbb{background:var(--bll);color:var(--bl)}.tba{background:var(--aml);color:var(--am)}
+
+/* SECTIONS */
+.sec{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:1rem 1.1rem;margin-bottom:10px;box-shadow:var(--sh)}
+
+/* CROSS SUMMARY */
+.cross-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.cross-card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:1rem 1.2rem;box-shadow:var(--sh)}
+.cross-title{font-size:11px;font-weight:700;color:var(--t2);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.cross-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd2);font-size:12px}
+.cross-row:last-child{border-bottom:none;padding-top:8px}
+.cross-lbl{color:var(--t2)}
+.cross-val{font-weight:700;font-family:'DM Mono',monospace}
+
+/* EFETIVIDADE */
+.efet-box{border-radius:var(--rs);padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;gap:1.5rem;background:var(--grb);border:1px solid var(--grl)}
+.efet-box.bad{background:var(--rdb);border-color:var(--rdl)}
+.efet-num{font-size:44px;font-weight:700;letter-spacing:-.04em;color:var(--gr);line-height:1}
+.efet-num.bad{color:var(--rd)}
+.efet-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.pill{font-size:11px;padding:2px 10px;border-radius:20px;font-weight:600;border:1px solid var(--bd2);background:var(--sf)}
+.efet-formula{font-size:10px;color:var(--t3);line-height:1.8;font-family:'DM Mono',monospace;max-width:380px}
+
+/* METRIC GRIDS */
+.m8{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.m6{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.m4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.m3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.m2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mc{background:var(--bg);border-radius:var(--rs);padding:10px 12px;border:1px solid var(--bd2)}
+.mc-l{font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.mc-v{font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.mc-s{font-size:10px;margin-top:3px;color:var(--t3)}
+.ok{color:var(--gr)}.warn{color:var(--rd)}.amber{color:var(--am)}.blue{color:var(--bl)}.purple{color:var(--pu)}.cyan{color:var(--cy)}
+
+/* SKU CARDS */
+.sku-cards{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.sku-card{background:var(--pub);border:1px solid var(--pul);border-radius:var(--rs);padding:8px 14px;min-width:110px}
+.sk-name{font-size:9px;font-weight:700;color:var(--pu);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+.sk-qty{font-size:22px;font-weight:700}.sk-sub{font-size:10px;color:var(--t3);margin-top:2px}
+
+/* DIVERGÊNCIAS */
+.divs-ok{font-size:12px;color:var(--gr);font-weight:600;padding:6px 0}
+.divs-list{display:flex;flex-direction:column;gap:4px;max-height:150px;overflow-y:auto;margin-top:6px}
+.div-row{font-size:11px;padding:5px 10px;background:var(--rdb);border:1px solid var(--rdl);border-radius:6px;display:flex;justify-content:space-between;align-items:center;font-family:'DM Mono',monospace}
+
+.pag-period-block{margin-bottom:16px}
+.pag-period-title{font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--bd)}
+.pag-periods-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.pag-compact .pag-stat-big{font-size:22px!important}
+.pag-compact{padding:.8rem 1rem}
+@media(max-width:900px){.pag-periods-grid{grid-template-columns:1fr}}
+
+/* ADS */
+.ads-config-row{display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap}
+.ads-config-item{display:flex;flex-direction:column;gap:4px}
+.ads-config-item label{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em}
+.ads-config-item input{border:1px solid var(--bd);border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;background:var(--bg);width:120px;text-align:right;font-family:'DM Mono',monospace}
+.ads-config-item input:focus{outline:none;border-color:var(--bl);background:#fff}
+.ads-config-hint{font-size:11px;color:var(--t3);margin-top:1px}
+.ads-tm-val{font-size:14px;font-weight:700;font-family:'DM Mono',monospace}
+.ads-tm-val.ok{color:var(--gr)}.ads-tm-val.amber{color:var(--am)}
+.ads-tm-val{font-size:15px;font-weight:700;font-family:'DM Mono',monospace}
+.ads-tm-val.ok{color:var(--gr)}.ads-tm-val.amber{color:var(--am)}
+
+/* Produto ADS block */
+.ads-prod{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:12px;overflow:hidden;box-shadow:var(--sh)}
+.ads-prod-header{display:flex;align-items:center;gap:10px;padding:.8rem 1rem;background:#fafaf8;border-bottom:1px solid var(--bd)}
+.ads-prod-header input{border:1px solid var(--bd);border-radius:6px;padding:5px 10px;font-size:13px;font-weight:700;background:var(--sf);color:var(--t);flex:1;font-family:'DM Sans',sans-serif}
+.ads-prod-header input:focus{outline:none;border-color:var(--bl)}
+.ads-prod-remove{border:none;background:var(--rdb);color:var(--rd);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
+.ads-prod-body{display:grid;grid-template-columns:repeat(5,1fr);border-top:none}
+.ads-col{border-right:1px solid var(--bd);padding:.75rem}
+.ads-col:last-child{border-right:none;background:var(--blb)}
+.ads-col-title{font-size:9px;font-weight:700;color:var(--bl);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--bd2)}
+.ads-col:last-child .ads-col-title{color:var(--bl)}
+.ads-field{margin-bottom:7px}
+.ads-field label{font-size:9px;color:var(--t3);display:block;margin-bottom:2px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.ads-field input{border:1px solid var(--bd);border-radius:5px;padding:5px 7px;font-size:12px;font-weight:600;background:var(--bg);color:var(--t);width:100%;text-align:right;font-family:'DM Mono',monospace}
+.ads-field input:focus{outline:none;border-color:var(--bl);background:#fff}
+.ads-divider{height:1px;background:var(--bd2);margin:8px 0}
+.ads-row{display:flex;justify-content:space-between;padding:3px 0;font-size:11px;border-bottom:1px solid var(--bd2)}
+.ads-row:last-child{border-bottom:none}
+.ads-row-lbl{color:var(--t2);font-size:10px}
+.ads-row-val{font-weight:700;font-family:'DM Mono',monospace;font-size:11px}
+.ads-row-val.ok{color:var(--gr)}.ads-row-val.warn{color:var(--rd)}.ads-row-val.amber{color:var(--am)}
+
+/* PAGAMENTO VIEW */
+.pag-filter{display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap}
+.pag-filter label{font-size:11px;font-weight:600;color:var(--t2)}
+.pag-btn{padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--sf);color:var(--t2);transition:all .15s}
+.pag-btn:hover{border-color:var(--bl);color:var(--bl)}
+.pag-btn.on{background:var(--bl);border-color:var(--bl);color:#fff}
+.pag-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.pag-stat-card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:1rem 1.2rem;box-shadow:var(--sh)}
+.pag-stat-title{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.pag-stat-big{font-size:32px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.pag-stat-sub{font-size:11px;color:var(--t3)}
+.pag-breakdown{background:var(--bg);border-radius:var(--rs);padding:10px 12px;margin-top:8px;border:1px solid var(--bd2)}
+.pag-br-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:11px;border-bottom:1px solid var(--bd2)}
+.pag-br-row:last-child{border-bottom:none}
+.pag-br-lbl{color:var(--t2)}
+.pag-br-val{font-weight:700;font-family:'DM Mono',monospace}
+.pag-bar-wrap{margin-top:6px}
+.pag-bar-bg{background:var(--bd2);border-radius:4px;height:6px;overflow:hidden;margin-top:3px}
+.pag-bar-fill{height:100%;border-radius:4px;transition:width .4s ease}
+
+/* TABLE */
+.tbl-wrap{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;margin-bottom:12px;box-shadow:var(--sh)}
+.tbl-hd{padding:.8rem 1rem;display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--bd);flex-wrap:wrap;background:#fafaf8}
+.tbl-hd-t{font-size:10px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;margin-right:4px}
+.tbl-hd input,.tbl-hd select{border:1px solid var(--bd);border-radius:6px;padding:5px 10px;font-size:12px;background:var(--sf);color:var(--t);font-family:'DM Sans',sans-serif}
+.tbl-hd input:focus,.tbl-hd select:focus{outline:none;border-color:var(--bl)}
+.tbl-hd input{width:190px}
+.tw{overflow-x:auto;max-height:340px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#fafaf8;padding:8px 12px;text-align:left;font-weight:700;color:var(--t3);font-size:10px;position:sticky;top:0;z-index:1;white-space:nowrap;border-bottom:1px solid var(--bd);text-transform:uppercase;letter-spacing:.04em}
+td{padding:7px 12px;border-bottom:1px solid var(--bd2);color:var(--t);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafaf8}
+.tbl-ft{padding:6px 12px;font-size:10px;color:var(--t3);background:#fafaf8;border-top:1px solid var(--bd);font-family:'DM Mono',monospace}
+
+/* TAGS */
+.tag{font-size:10px;padding:2px 9px;border-radius:20px;font-weight:700}
+.tg{background:var(--grl);color:var(--gr)}
+.ta{background:var(--aml);color:var(--am)}
+.tr2{background:var(--rdl);color:var(--rd)}
+.tp{background:var(--pul);color:var(--pu)}
+.tb2{background:var(--bll);color:var(--bl)}
+.tcy{background:var(--cyl);color:var(--cy)}
+.tgr{background:#f3f4f6;color:#6b7280}
+
+.mono{font-family:'DM Mono',monospace}
+.gap{height:8px}
+.view{display:none}.view.on{display:block}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-ic">🛒</div>
+  <h1>Controle de Pedidos</h1>
+  <span class="topbar-sub">Shopify × Melonn</span>
+  <div class="topbar-cot">
+    <label>💱 Cotação COP → BRL</label>
+    <input type="number" id="cotacao-global" value="0.0014" step="0.000001" min="0.000001"
+      oninput="onCotacaoChange(this.value)" placeholder="ex: 0.0014">
+    <span class="topbar-cot-hint" id="cot-global-hint">1 COP = R$ 0,0014 · 100k COP = R$ 140,00</span>
+  </div>
+  <div class="topbar-ts" id="ts"></div>
+</div>
+
+<div class="wrap">
+
+  <!-- UPLOAD -->
+  <div class="upload-grid">
+    <div class="ucard">
+      <div class="uc-label"><div class="uc-num">1</div>Shopify (.csv ou .xlsx)</div>
+      <div class="drop" id="drop-sf" onclick="document.getElementById('f-sf').click()" ondragover="onDragOver(event,'drop-sf')" ondragleave="onDragLeave('drop-sf')" ondrop="onDrop(event,'sf')">
+        <input type="file" id="f-sf" accept=".xlsx,.csv" onchange="loadFile(this,'sf')">
+        <span class="di">📦</span><div class="dt" id="lbl-sf">Clique ou arraste</div>
+      </div>
+    </div>
+    <div class="ucard">
+      <div class="uc-label"><div class="uc-num">2</div>Melonn — sell_orders (.xlsx)</div>
+      <div class="drop" id="drop-ml" onclick="document.getElementById('f-ml').click()" ondragover="onDragOver(event,'drop-ml')" ondragleave="onDragLeave('drop-ml')" ondrop="onDrop(event,'ml')">
+        <input type="file" id="f-ml" accept=".xlsx,.csv" onchange="loadFile(this,'ml')">
+        <span class="di">🟢</span><div class="dt" id="lbl-ml">Clique ou arraste</div>
+      </div>
+    </div>
+    <div class="ucard">
+      <div class="uc-label"><div class="uc-num">3</div>Custo de Envio (.xlsx) <span style="text-transform:none;font-weight:400;letter-spacing:0;color:var(--t3)">— opcional</span></div>
+      <div class="drop" id="drop-fr" onclick="document.getElementById('f-fr').click()" ondragover="onDragOver(event,'drop-fr')" ondragleave="onDragLeave('drop-fr')" ondrop="onDrop(event,'fr')">
+        <input type="file" id="f-fr" accept=".xlsx,.csv" onchange="loadFile(this,'fr')">
+        <span class="di">🚚</span><div class="dt" id="lbl-fr">Clique ou arraste</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOS SKU -->
+  <div class="sku-sec">
+    <div class="sec-lbl">💰 Custo unitário por SKU — preencha o custo de cada produto antes de processar</div>
+    <div class="sku-grid">
+      <div class="sku-item"><label>HAIR</label><input id="c-hair" type="number" value="0" min="0" step="0.01" oninput="recalc()"></div>
+      <div class="sku-item"><label>BELLA</label><input id="c-bella" type="number" value="0" min="0" step="0.01" oninput="recalc()"></div>
+      <div class="sku-item"><label>ESSENCE</label><input id="c-essence" type="number" value="0" min="0" step="0.01" oninput="recalc()"></div>
+      <div class="sku-item"><label>REGALOMENOR</label><input id="c-regalo" type="number" value="0" min="0" step="0.01" oninput="recalc()"></div>
+      <div class="sku-item"><label>ECOBAG</label><input id="c-ecobag" type="number" value="0" min="0" step="0.01" oninput="recalc()"></div>
+    </div>
+  </div>
+
+  <div class="run-row">
+    <button class="btn btn-go" id="btn-run" onclick="processar()">⚡ Processar arquivos</button>
+    <span class="err" id="err"></span>
+  </div>
+  <div class="prog" id="prog">
+    <div class="prog-lbl" id="prog-lbl">Aguarde...</div>
+    <div class="prog-bg"><div class="prog-bar" id="prog-bar" style="width:0%"></div></div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results" id="results">
+
+    <!-- MAIN TABS -->
+    <div class="main-tabs">
+      <div class="main-tab on" onclick="switchMain('visao',this)">📊 Visão Geral</div>
+      <div class="main-tab" onclick="switchMain('pagamento',this)">💳 Método de Pagamento</div>
+      <div class="main-tab" onclick="switchMain('ads',this)">📣 ADS</div>
+    </div>
+
+    <!-- ═══ VIEW: VISÃO GERAL ═══ -->
+    <div class="view on" id="view-visao">
+      <div class="ptabs" id="tabs"></div>
+      <div id="cross-summary"></div>
+      <div class="tm-row" id="tm-row"></div>
+      <div class="sec" id="sec-efet"></div>
+      <div class="sec" id="sec-financeiro"></div>
+      <div class="sec" id="sec-ped"></div>
+      <div class="sec" id="sec-sku"></div>
+      <div class="sec" id="sec-env"></div>
+      <div class="sec" id="sec-div"></div>
+      <div class="tbl-wrap">
+        <div class="tbl-hd">
+          <span class="tbl-hd-t">Pedidos</span>
+          <input id="srch" placeholder="Buscar pedido ou cliente..." oninput="renderTable()">
+          <select id="flt-st" onchange="renderTable()">
+            <option value="">Todos os status</option>
+            <option value="ENTREGADO">✅ Entregue</option>
+            <option value="DEVOLUCION">↩ Devolução</option>
+            <option value="CANCELADO">✕ Cancelado</option>
+            <option value="NOVEDAD">⚑ Novedad</option>
+            <option value="EM_TRANSITO">🚚 Em trânsito</option>
+            <option value="EM_PROCESSO">📦 Em processo</option>
+            <option value="SEM_MELONN">— Sem Melonn</option>
+          </select>
+          <select id="flt-per" onchange="renderTable()">
+            <option value="">Todos os períodos</option>
+            <option value="1">01–07</option><option value="2">08–15</option>
+            <option value="3">16–23</option><option value="4">24–31</option>
+          </select>
+          <select id="flt-pag" onchange="renderTable()">
+            <option value="">Todos pagamentos</option>
+            <option value="Recaudo en efectivo">Recaudo en efectivo</option>
+            <option value="No aplica">No aplica</option>
+          </select>
+          <button class="btn" onclick="exportCsv()" style="padding:5px 12px;font-size:11px;margin-left:auto">↓ CSV</button>
+        </div>
+        <div class="tw">
+          <table>
+            <thead><tr>
+              <th>Pedido</th><th>Cliente</th><th>Período</th>
+              <th>Status Melonn</th><th>Pagamento</th>
+              <th>Total Venda</th><th>Custo Produto</th><th>Custo Envio</th><th>Ticket Líquido</th>
+              <th>SKUs</th><th>Data</th>
+            </tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div class="tbl-ft" id="tbl-ft"></div>
+      </div>
+    </div>
+
+    <!-- ═══ VIEW: ADS ═══ -->
+    <div class="view" id="view-ads">
+
+      <!-- COTAÇÃO MOVIDA PARA A TOPBAR -->
+      <!-- TM -->
+      <div class="sec" style="margin-bottom:10px">
+        <div class="sec-lbl" style="margin-bottom:10px">📊 Ticket Médio (calculado com cotação da topbar)</div>
+        <div class="ads-config-row">
+          <div class="ads-config-item">
+            <label>TM Pago (BRL)</label>
+            <span id="tm-brl-ent" class="ads-tm-val ok">—</span>
+          </div>
+          <div class="ads-config-item">
+            <label>TM Pago (COP)</label>
+            <span id="tm-cop-ent" class="ads-tm-val ok">—</span>
+          </div>
+          <div class="ads-config-item">
+            <label>TM Devolução — só frete (BRL)</label>
+            <span id="tm-brl-dev" class="ads-tm-val amber">—</span>
+          </div>
+          <div class="ads-config-item">
+            <label>TM Devolução — só frete (COP)</label>
+            <span id="tm-cop-dev" class="ads-tm-val amber">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRODUTOS -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.05em">📣 Produtos / Campanhas</div>
+        <button class="btn" onclick="addProdutoAds()" style="padding:5px 14px;font-size:12px">+ Adicionar produto</button>
+      </div>
+      <div id="ads-produtos"></div>
+
+    </div>
+    <div class="view" id="view-pagamento">
+      <div class="sec" style="margin-bottom:10px">
+        <div class="sec-lbl" style="margin-bottom:12px">💳 Selecione o método de pagamento</div>
+        <div class="pag-filter">
+          <div class="pag-btn on" onclick="switchPag('todos',this)">Todos</div>
+          <div class="pag-btn" onclick="switchPag('Recaudo en efectivo',this)">Recaudo en efectivo (COD)</div>
+          <div class="pag-btn" onclick="switchPag('No aplica',this)">No aplica (Pré-pago)</div>
+        </div>
+      </div>
+      <div id="pag-content"></div>
+    </div>
+
+  </div><!-- /results -->
+</div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const F={sf:null,ml:null,fr:null};
+let allRows=[],P={},active='geral',freteMap={},freteMediaEnt=0,freteMediaDev=0;
+let totalShopify=0,totalMelonn=0,soShopify=[],soMelonn=0;
+let currentPag='todos';
+
+const CUSTO={
+  HAIR:()=>+document.getElementById('c-hair').value||0,
+  BELLA:()=>+document.getElementById('c-bella').value||0,
+  ESSENCE:()=>+document.getElementById('c-essence').value||0,
+  REGALOMENOR:()=>+document.getElementById('c-regalo').value||0,
+  ECOBAG:()=>+document.getElementById('c-ecobag').value||0,
+};
+const SKU_NAME={HAIR:'Rosa Hair',BELLA:'Rosa Bella',ESSENCE:'Rosa Essence',REGALOMENOR:'Cosmetiquera',ECOBAG:'Ecobag'};
+
+// ── STATUS MELONN (coluna "Estado orden") ──────────────────────────────────────
+// Delivered to buyer → ENTREGADO
+// Canceled + Novedades="Novedad" → DEVOLUCION
+// Canceled sem novedad → CANCELADO
+// Delivery not posible → NOVEDAD
+// Packed / Packed - on hold / Picked-up by buyer / On Cancelation Process → EM_PROCESSO
+// Shipped - in transit → EM_TRANSITO
+
+function normSt(estado, novedades) {
+  const e = String(estado||'').toLowerCase().trim();
+  const n = String(novedades||'').toLowerCase().trim();
+  if(e==='delivered to buyer')          return 'ENTREGADO';
+  if(e==='shipped - in transit')        return 'EM_TRANSITO';
+  if(e==='delivery not posible')        return 'NOVEDAD';
+  if(e==='packed' || e==='packed - on hold' || e==='picked-up by buyer' || e.startsWith('on cancelation process'))
+                                        return 'EM_PROCESSO';
+  if(e==='canceled') {
+    if(n==='novedad')                   return 'DEVOLUCION';
+    return 'CANCELADO';
+  }
+  return 'EM_PROCESSO';
+}
+
+function stLbl(s){return{
+  ENTREGADO:'Entregue',DEVOLUCION:'Devolução',CANCELADO:'Cancelado',
+  NOVEDAD:'Novedad',EM_TRANSITO:'Em trânsito',EM_PROCESSO:'Em processo',SEM_MELONN:'Sem Melonn'
+}[s]||s;}
+
+function stTag(s){
+  const c={ENTREGADO:'tg',DEVOLUCION:'ta',CANCELADO:'tr2',NOVEDAD:'tp',EM_TRANSITO:'tcy',EM_PROCESSO:'tb2',SEM_MELONN:'tgr'}[s]||'tgr';
+  return`<span class="tag ${c}">${stLbl(s)}</span>`;
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function getDay(s){if(!s)return null;const t=String(s);const m=t.match(/(\d{4})-(\d{2})-(\d{2})/);if(m)return+m[3];const m2=t.match(/(\d{4})[-\/](\d{2})[-\/](\d{2})/);if(m2)return+m2[3];return null;}
+function fmtDate(s){if(!s)return'—';const m=String(s).match(/(\d{4})-(\d{2})-(\d{2})/);return m?`${m[3]}/${m[2]}/${m[1]}`:String(s).slice(0,10);}
+function getPer(d){if(!d)return 0;if(d<=7)return 1;if(d<=15)return 2;if(d<=23)return 3;return 4;}
+function pLbl(p){return{1:'01–07',2:'08–15',3:'16–23',4:'24–31'}[p]||'—';}
+function avg(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:null;}
+function tick(){return new Promise(r=>setTimeout(r,60));}
+function sp(p,l){document.getElementById('prog-bar').style.width=p+'%';document.getElementById('prog-lbl').textContent=l;}
+function fBRL(v){if(v==null||isNaN(v))return'—';return'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');}
+function fPct(v,dec=1){if(v==null||isNaN(v))return'—';return(v*100).toFixed(dec).replace('.',',')+'%';}
+function n0(v){return(v==null||isNaN(v))?0:v;}
+
+// ── FILE LOAD ─────────────────────────────────────────────────────────────────
+function onDragOver(e,id){e.preventDefault();document.getElementById(id).classList.add('over')}
+function onDragLeave(id){document.getElementById(id).classList.remove('over')}
+function onDrop(e,k){e.preventDefault();onDragLeave('drop-'+k);const f=e.dataTransfer.files[0];if(f)readFile(f,k);}
+function loadFile(inp,k){const f=inp.files[0];if(f)readFile(f,k);}
+function readFile(f,k){
+  const isCsv=f.name.toLowerCase().endsWith('.csv');
+  const lbl=document.getElementById('lbl-'+k);
+  if(isCsv){
+    // CSV: ler como texto diretamente
+    const r=new FileReader();
+    r.onload=e=>{
+      try{
+        F[k]=XLSX.read(e.target.result,{type:'string',cellDates:false,raw:false});
+        lbl.textContent='✓ '+(f.name.length>30?f.name.slice(0,28)+'…':f.name);
+        lbl.className='dt ok';
+      }catch(err){lbl.textContent='❌ Erro ao ler: '+err.message;lbl.className='dt';}
+    };
+    r.readAsText(f,'UTF-8');
+  } else {
+    // XLSX: ler como ArrayBuffer
+    const r=new FileReader();
+    r.onload=e=>{
+      try{
+        F[k]=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:false,raw:false});
+        lbl.textContent='✓ '+(f.name.length>30?f.name.slice(0,28)+'…':f.name);
+        lbl.className='dt ok';
+      }catch(err){lbl.textContent='❌ Erro ao ler: '+err.message;lbl.className='dt';}
+    };
+    r.readAsArrayBuffer(f);
+  }
+}
+
+// ── UNIFY SHOPIFY (por Name) ───────────────────────────────────────────────────
+function unifySF(rows){
+  const map={};
+  rows.forEach(r=>{
+    const name=(r['Name']||'').trim();if(!name)return;
+    if(!map[name]){
+      map[name]={name,skus:{},
+        totalVenda:+r['Total']||0,
+        shipping:+r['Shipping']||0,
+        createdAt:r['Created at']||'',
+        finStatus:r['Financial Status']||'',
+        client:r['Shipping Name']||r['Billing Name']||'',
+        tags:r['Tags']||'',
+        payMethod:r['Payment Method']||'',
+      };
+    }
+    const sku=(r['Lineitem sku']||'').trim();const qty=parseInt(r['Lineitem quantity'])||0;
+    if(sku&&qty)map[name].skus[sku]=(map[name].skus[sku]||0)+qty;
+  });
+  return Object.values(map);
+}
+
+// ── UNIFY MELONN (por "Número orden") ─────────────────────────────────────────
+// Melonn pode ter múltiplas linhas por pedido (1 linha por produto)
+// Pegamos o status da primeira linha; novedades se qualquer linha tiver
+function unifyML(rows){
+  const map={};
+  rows.forEach(r=>{
+    const name=(r['Número orden']||'').trim();if(!name)return;
+    if(!map[name]){
+      map[name]={
+        name,
+        estado:r['Estado orden']||'',
+        novedades:r['Novedades']||'',
+        recaudo:r['Recaudo en efectivo']||'',
+        createdAt:r['Fecha de creación']||'',
+        buyer:r['Nombre comprador']||'',
+        region:r['Región de destino']||'',
+        ciudad:r['Ciudad de destino']||'',
+        skus:{},
+      };
+    }
+    // Se qualquer linha tiver novedad, marca o pedido
+    if((r['Novedades']||'').toLowerCase().trim()==='novedad')
+      map[name].novedades='Novedad';
+    const sku=(r['SKU']||'').trim();
+    const qty=parseInt(r['Cantidad ordenada'])||0;
+    const precio=parseFloat(r['Precio unitario canal de venta'])||0;
+    if(sku&&qty){
+      map[name].skus[sku]=(map[name].skus[sku]||0)+qty;
+      // Acumular custo total do produto (precio × qty por linha)
+      map[name].custoProduto=(map[name].custoProduto||0)+(precio*qty);
+    }
+  });
+  return Object.values(map);
+}
+
+function recalc(){
+  if(Object.keys(P).length) _processar();
+}
+
+// ── MAIN PROCESS ──────────────────────────────────────────────────────────────
+async function processar(){
+  document.getElementById('err').textContent='';
+  if(!F.sf){document.getElementById('err').textContent='Selecione o arquivo da Shopify.';return;}
+  if(!F.ml){document.getElementById('err').textContent='Selecione o arquivo da Melonn.';return;}
+  document.getElementById('prog').style.display='block';
+  document.getElementById('results').style.display='none';
+  document.getElementById('btn-run').disabled=true;
+  try{
+  await _processar();
+  }catch(e){
+    document.getElementById('err').textContent='Erro ao processar: '+e.message;
+    console.error(e);
+    document.getElementById('prog').style.display='none';
+    document.getElementById('btn-run').disabled=false;
+  }
+}
+async function _processar(){
+
+  sp(8,'Lendo Shopify...'); await tick();
+  const sRows=XLSX.utils.sheet_to_json(F.sf.Sheets[F.sf.SheetNames[0]],{raw:false,defval:''});
+  const sOrders=unifySF(sRows);
+
+  sp(25,'Lendo Melonn...'); await tick();
+  const mRows=XLSX.utils.sheet_to_json(F.ml.Sheets[F.ml.SheetNames[0]],{raw:false,defval:''});
+  const mOrders=unifyML(mRows);
+  const melMap={};
+  mOrders.forEach(o=>melMap[o.name]=o);
+
+  // CRUZAMENTO
+  const shopSet=new Set(sOrders.map(o=>o.name));
+  const melSet=new Set(mOrders.map(o=>o.name));
+  totalShopify=shopSet.size;
+  totalMelonn=melSet.size;
+  soShopify=[...shopSet].filter(n=>!melSet.has(n));
+  soMelonn=[...melSet].filter(n=>!shopSet.has(n)).length;
+
+  // Parseia número em formato COP: 16.750 = 16750, 16.750,50 = 16750.50
+  // Regra: se tem ponto E vírgula → ponto é milhar, vírgula é decimal
+  //        se tem só ponto → verifica se é milhar (16.750) ou decimal (16.5)
+  //        se tem só vírgula → vírgula é decimal
+  function parseCOP(s){
+    // Se já é número (XLSX parseou automaticamente), retorna direto
+    if(typeof s === 'number') return s;
+    if(!s) return 0;
+    s = String(s).trim().replace(/\s/g,'');
+    if(!s) return 0;
+    // Formato: 1.234.567,89 → ponto=milhar, vírgula=decimal
+    if(s.includes('.')&&s.includes(',')){
+      return parseFloat(s.replace(/\./g,'').replace(',','.'))||0;
+    }
+    // Só vírgula: 20400,50 → decimal
+    if(s.includes(',')&&!s.includes('.')){
+      return parseFloat(s.replace(',','.'))||0;
+    }
+    // Só ponto: 20.400 (3 dígitos após ponto = milhar) ou 20.4 (decimal)
+    if(s.includes('.')){
+      const partes = s.split('.');
+      const ultima = partes[partes.length-1];
+      if(ultima.length===3) return parseFloat(s.replace(/\./g,''))||0;
+      return parseFloat(s)||0;
+    }
+    return parseFloat(s)||0;
+  }
+
+  // Normaliza número de pedido para cruzamento: remove #, espaços, zeros à esquerda
+  function normPedido(s){
+    return String(s||'').trim().replace(/^#+/,'').replace(/\s+/g,'').replace(/^0+/,'');
+  }
+
+  sp(42,'Lendo frete...'); await tick();
+  freteMap={};freteMediaEnt=0;freteMediaDev=0;
+  if(F.fr){
+    const ws=F.fr.Sheets[F.fr.SheetNames[0]];
+    // raw:true → preserva o valor original das células (ex: "20.400" como string, não 20.4)
+    const allRows_fr=XLSX.utils.sheet_to_json(ws,{raw:true,defval:'',header:1});
+
+    // Encontrar linha do cabeçalho real
+    let headerIdx=-1;
+    for(let i=0;i<Math.min(20,allRows_fr.length);i++){
+      if(allRows_fr[i].some(v=>String(v||'').toLowerCase().includes('número de orden de seller')||String(v||'').toLowerCase().includes('numero de orden de seller'))){
+        headerIdx=i; break;
+      }
+    }
+
+    if(headerIdx>=0){
+      const headers=allRows_fr[headerIdx].map(v=>String(v||'').trim());
+      const colPedido = headers.findIndex(h=>h.toLowerCase().includes('número de orden de seller')||h.toLowerCase().includes('numero de orden de seller'));
+      const colCusto  = headers.findIndex(h=>h.toLowerCase().includes('total facturado'));
+      const colEstado = headers.findIndex(h=>h.toLowerCase().includes('estado de la orden'));
+
+      const valsEnt=[], valsDev=[];
+      for(let i=headerIdx+1;i<allRows_fr.length;i++){
+        const row    = allRows_fr[i];
+        const pedidoRaw = String(row[colPedido]||'').trim();
+        const custo = parseCOP(row[colCusto]);
+        const estado = String(row[colEstado]||'').trim().toLowerCase();
+        if(!pedidoRaw||custo<=0) continue;
+
+        const key = normPedido(pedidoRaw);
+        if(!key) continue;
+
+        if(estado==='delivered to buyer'){
+          if(!freteMap[key]) freteMap[key]={ent:0,dev:0};
+          freteMap[key].ent=(freteMap[key].ent||0)+custo;
+          valsEnt.push(custo);
+        } else if(estado==='canceled'){
+          // Guarda por pedido (valor real) E acumula na média global (fallback)
+          if(!freteMap[key]) freteMap[key]={ent:0,dev:0};
+          freteMap[key].dev=(freteMap[key].dev||0)+custo;
+          valsDev.push(custo);
+        }
+      }
+
+      if(valsEnt.length) freteMediaEnt=valsEnt.reduce((a,b)=>a+b,0)/valsEnt.length;
+      // freteMediaDev = fallback para pedidos devolvidos NÃO encontrados no arquivo
+      if(valsDev.length) freteMediaDev=valsDev.reduce((a,b)=>a+b,0)/valsDev.length;
+    }
+  }
+
+  sp(58,'Calculando métricas...'); await tick();
+  P={};
+  for(let p=1;p<=4;p++)P[p]={
+    sh:0,ml:0,ent:0,dev:0,can:0,nov:0,transit:0,proc:0,semMel:[],
+    tv:0,tcp:0,tce:0,tl:0,tcd:0,
+    tmV:[],tmEntV:[],tmDevV:[],
+    // TM por método de pagamento
+    rec_tmEntV:[],rec_tmDevV:[],  // Recaudo en efectivo
+    nap_tmEntV:[],nap_tmDevV:[],  // No aplica
+    skuT:{},
+    rec_ent:0,rec_dev:0,rec_can:0,rec_nov:0,rec_transit:0,rec_proc:0,rec_total:0,
+    nap_ent:0,nap_dev:0,nap_can:0,nap_nov:0,nap_transit:0,nap_proc:0,nap_total:0,
+  };
+  allRows=[];
+
+  sOrders.forEach(o=>{
+    const day=getDay(o.createdAt);const per=getPer(day);if(!per)return;
+    P[per].sh++;
+    const mel=melMap[o.name]||null;
+    let st='SEM_MELONN', recaudo='';
+
+    if(mel){
+      P[per].ml++;
+      st=normSt(mel.estado, mel.novedades);
+      recaudo=mel.recaudo||'';
+    }
+
+    // Contadores status
+    if(st==='ENTREGADO')       P[per].ent++;
+    else if(st==='DEVOLUCION') P[per].dev++;
+    else if(st==='CANCELADO')  P[per].can++;
+    else if(st==='NOVEDAD')    P[per].nov++;
+    else if(st==='EM_TRANSITO')P[per].transit++;
+    else if(st==='EM_PROCESSO')P[per].proc++;
+    else                       P[per].semMel.push(o.name);
+
+    // Contadores por método de pagamento
+    const isRec=recaudo==='Recaudo en efectivo';
+    const isNap=recaudo==='No aplica';
+    if(isRec||isNap){
+      const pfx=isRec?'rec_':'nap_';
+      P[per][pfx+'total']++;
+      if(st==='ENTREGADO')       P[per][pfx+'ent']++;
+      else if(st==='DEVOLUCION') P[per][pfx+'dev']++;
+      else if(st==='CANCELADO')  P[per][pfx+'can']++;
+      else if(st==='NOVEDAD')    P[per][pfx+'nov']++;
+      else if(st==='EM_TRANSITO')P[per][pfx+'transit']++;
+      else if(st==='EM_PROCESSO')P[per][pfx+'proc']++;
+    }
+
+    // CUSTO DE PRODUTO:
+    // Para cada SKU do pedido (qtd vem da Shopify):
+    //   custo_produto = Σ (custo_unitario_SKU digitado pelo usuário × quantidade)
+    // Exemplo: 2x HAIR (R$16.500) + 1x BELLA (R$20.500) = R$53.500
+    let cp=0;
+    Object.entries(o.skus).forEach(([sku,qty])=>{
+      const custoUnit=CUSTO[sku]?CUSTO[sku]():0;
+      cp+=custoUnit*qty;
+      P[per].skuT[sku]=(P[per].skuT[sku]||0)+qty;
+    });
+
+    // CUSTO DE ENVIO:
+    // Busca no arquivo de frete pelo número do pedido (#XXXXX)
+    // → Pedido ENTREGUE no arquivo → usa Total facturado do status "Delivered to buyer"
+    // → Pedido DEVOLVIDO no arquivo → usa Total facturado do status "Canceled"
+    // → Pedido NÃO encontrado → usa média separada (entrega ou devolução conforme status)
+    const nameClean = o.name.trim();
+    const frKey     = normPedido(nameClean);
+    const frEntry   = freteMap[frKey]||null;
+    let ce=0;
+    const isDev = st==='DEVOLUCION'||st==='CANCELADO';
+    if(isDev){
+      // Devolução: usa valor real do arquivo se encontrado, senão média global (fallback)
+      ce = frEntry&&frEntry.dev>0 ? frEntry.dev : freteMediaDev;
+    } else {
+      // Entrega: usa valor real do arquivo se encontrado, senão média global (fallback)
+      ce = frEntry&&frEntry.ent>0 ? frEntry.ent : freteMediaEnt;
+    }
+    const hasFrete = frEntry!=null;
+
+    // Todos os valores em COP — conversão para BRL só na exibição
+    // tv  = valor de venda (Shopify Total) — COP
+    // cp  = custo produto (SKU × qtd, digitado pelo usuário) — COP
+    // ce  = custo frete (Total facturado do arquivo) — COP
+    // liq = TM líquido = tv - cp - ce — COP
+    const tv  = o.totalVenda||0;   // COP
+    const liq = tv - cp - ce;      // COP
+
+    P[per].tv +=tv; P[per].tcp+=cp; P[per].tce+=ce; P[per].tl+=liq;
+
+    // Ticket médio — tudo em COP, converte para BRL só na exibição
+    if(tv>0) P[per].tmV.push(liq);
+    if(st==='ENTREGADO'&&tv>0) P[per].tmEntV.push(liq);
+    // TM devolução = custo real de frete deste pedido (ou média se não encontrado)
+    if(st==='DEVOLUCION'&&ce>0){
+      P[per].tmDevV.push(ce);
+      P[per].tcd = (P[per].tcd||0) + ce; // acumula custo total de devolução
+    }
+
+    // TM por método de pagamento — COP
+    const isRec2=recaudo==='Recaudo en efectivo';
+    const isNap2=recaudo==='No aplica';
+    if(isRec2){
+      if(st==='ENTREGADO'&&tv>0) P[per].rec_tmEntV.push(liq);
+      if(st==='DEVOLUCION'&&ce>0) P[per].rec_tmDevV.push(ce);
+    }
+    if(isNap2){
+      if(st==='ENTREGADO'&&tv>0) P[per].nap_tmEntV.push(liq);
+      if(st==='DEVOLUCION'&&ce>0) P[per].nap_tmDevV.push(ce);
+    }
+
+    allRows.push({
+      name:o.name,client:o.client,per,day,createdAt:o.createdAt,
+      st,finStatus:o.finStatus,recaudo,
+      tv,cp,ce,liq,skus:o.skus,hasFrete
+    });
+  });
+
+  sp(90,'Renderizando...'); await tick();
+  document.getElementById('ts').textContent='Atualizado: '+new Date().toLocaleString('pt-BR');
+  document.getElementById('prog').style.display='none';
+  document.getElementById('btn-run').disabled=false;
+  active='geral'; currentPag='todos';
+  renderResults();
+  renderAdsProdutos();
+  document.getElementById('results').style.display='block';
+} // end _processar
+
+// ── CALC PERIOD ───────────────────────────────────────────────────────────────
+function calcP(p){
+  const agg=(keys)=>keys.reduce((acc,k)=>{
+    Object.keys(P[1]).forEach(f=>{if(typeof P[1][f]==='number') acc[f]=(acc[f]||0)+P[k][f];});
+    acc.semMel=[...(acc.semMel||[]),...P[k].semMel];
+    acc.tmV=[...(acc.tmV||[]),...P[k].tmV];
+    acc.tmEntV=[...(acc.tmEntV||[]),...P[k].tmEntV];
+    acc.tmDevV=[...(acc.tmDevV||[]),...P[k].tmDevV];
+    acc.rec_tmEntV=[...(acc.rec_tmEntV||[]),...P[k].rec_tmEntV];
+    acc.rec_tmDevV=[...(acc.rec_tmDevV||[]),...P[k].rec_tmDevV];
+    acc.nap_tmEntV=[...(acc.nap_tmEntV||[]),...P[k].nap_tmEntV];
+    acc.nap_tmDevV=[...(acc.nap_tmDevV||[]),...P[k].nap_tmDevV];
+    acc.skuT=acc.skuT||{};
+    Object.entries(P[k].skuT).forEach(([s,q])=>{acc.skuT[s]=(acc.skuT[s]||0)+q;});
+    return acc;
+  },{semMel:[],tmV:[],tmEntV:[],tmDevV:[],rec_tmEntV:[],rec_tmDevV:[],nap_tmEntV:[],nap_tmDevV:[],skuT:{}});
+
+  const d=p==='geral'?agg([1,2,3,4]):Object.assign({
+    semMel:[],tmV:[],tmEntV:[],tmDevV:[],
+    rec_tmEntV:[],rec_tmDevV:[],nap_tmEntV:[],nap_tmDevV:[],skuT:{}
+  },P[p]);
+
+  d.tmLiq    = avg(d.tmV);
+  d.tmEntLiq = avg(d.tmEntV);
+  d.tmDevLiq = avg(d.tmDevV);   // média real dos ce de devolução deste período
+  d.tcd      = d.tcd||0;        // total custo devolução (soma dos ce de pedidos DEVOLUCION)
+  d.tmBruto  = d.sh>0?d.tv/d.sh:null;
+  d.tmEnvio  = d.sh>0?d.tce/d.sh:null;
+  // TM por método de pagamento
+  d.rec_tmEnt = avg(d.rec_tmEntV);
+  d.rec_tmDev = avg(d.rec_tmDevV);
+  d.nap_tmEnt = avg(d.nap_tmEntV);
+  d.nap_tmDev = avg(d.nap_tmDevV);
+
+  d.finalizado=d.ent+d.dev+d.nov;
+  d.efet     = d.finalizado>0?(d.ent/d.finalizado):0;
+  d.margem   = d.tv>0?d.tl/d.tv:null;
+  d.pctEnt   = d.sh?d.ent/d.sh:0;
+  d.pctDev   = d.sh?d.dev/d.sh:0;
+  d.pctCan   = d.sh?d.can/d.sh:0;
+  d.pctNov   = d.sh?d.nov/d.sh:0;
+  return d;
+}
+
+// ── SWITCH VIEWS ──────────────────────────────────────────────────────────────
+function switchMain(view,el){
+  document.querySelectorAll('.main-tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.getElementById('view-'+view).classList.add('on');
+  if(view==='pagamento') renderPagamento();
+  if(view==='ads') renderAds();
+}
+
+// ── ADS ───────────────────────────────────────────────────────────────────────
+let adsProdutos=[];
+let adsNextId=1;
+
+function getCot(){
+  // Lê sempre da topbar (campo global)
+  const v=parseFloat(document.getElementById('cotacao-global').value);
+  return(isNaN(v)||v<=0)?0.0014:v;
+}
+function onCotacaoChange(val){
+  // Sincronizar com o campo antigo da aba ADS (se ainda existir)
+  const legado=document.getElementById('cotacao-cop');
+  if(legado) legado.value=val;
+  const hint=document.getElementById('cot-global-hint');
+  const cot=getCot();
+  if(hint) hint.textContent=`1 COP = R$ ${cot.toFixed(6).replace('.',',')} · 100k COP = R$ ${(100000*cot).toFixed(2).replace('.',',')}`;
+  // Re-renderizar tudo que depende da cotação
+  if(Object.keys(P).length){
+    renderResults();
+    renderAdsProdutos();
+    renderAds();
+    // Se a aba pagamento estiver visível, atualizar também
+    const vp=document.getElementById('view-pagamento');
+    if(vp&&vp.classList.contains('on')) renderPagamento();
+  }
+}
+// ADS por período = soma do ADS de todos os produtos naquele período
+function getAds(p){
+  return adsProdutos.reduce((s,prod)=>s+(parseFloat(prod.periodos[p-1].ads)||0),0);
+}
+// Total ADS = soma dos 4 períodos
+function getTotalAds(){
+  return[1,2,3,4].reduce((a,p)=>a+getAds(p),0);
+}
+
+function addProdutoAds(){
+  const id=adsNextId++;
+  adsProdutos.push({id,
+    nome:'Produto / Campanha',
+    periodos:[0,1,2,3].map(()=>({ads:0}))
+  });
+  renderAdsProdutos();
+}
+function removeProdutoAds(id){
+  adsProdutos=adsProdutos.filter(p=>p.id!==id);
+  renderAdsProdutos();
+}
+function setAdsProd(id,per,field,val){
+  const p=adsProdutos.find(x=>x.id===id);
+  if(p) p.periodos[per][field]=parseFloat(String(val).replace(',','.'))||0;
+}
+function saveAdsProd(id,per,field,val){
+  const p=adsProdutos.find(x=>x.id===id);
+  if(p){
+    p.periodos[per][field]=parseFloat(String(val).replace(',','.'))||0;
+    renderAdsProdutos();
+  }
+}
+
+// Atualiza só os valores calculados sem re-renderizar os inputs
+function renderAdsProdutosCalc(){
+  renderAdsProdutos();
+}
+function setAdsNome(id,val){
+  const p=adsProdutos.find(x=>x.id===id);
+  if(p){p.nome=val;}
+}
+
+function renderAdsProdutos(){
+  const container=document.getElementById('ads-produtos');
+  if(!container)return;
+  if(adsProdutos.length===0){
+    container.innerHTML=`<div style="font-size:12px;color:var(--t3);padding:12px 0;text-align:center">
+      Clique em "+ Adicionar produto" para começar.</div>`;
+    return;
+  }
+
+  const PERS=[
+    {lbl:'1 ao 7',p:1},
+    {lbl:'8 ao 15',p:2},
+    {lbl:'16 ao 23',p:3},
+    {lbl:'24 ao 31',p:4},
+  ];
+
+  // Cotação COP → BRL
+  const cot=getCot();
+  // Função: converte valor COP → BRL
+  const toBRL=v=>v!=null?(v*cot):null;
+
+  container.innerHTML=adsProdutos.map(prod=>{
+    // Acumuladores GERAL — somente deste produto
+    let gTotalSh=0,gEnt=0,gDev=0,gCan=0,gNov=0,gTransit=0,gProc=0;
+    let gRecBruta=0,gAds=0,gRecLiq=0;
+
+    const cols=PERS.map(({lbl,p})=>{
+      const d=Object.keys(P).length?calcP(p):{sh:0,ent:0,dev:0,can:0,nov:0,transit:0,proc:0,tv:0,tl:0,pctEnt:0,pctDev:0,pctCan:0,tmEntLiq:0,tmDevLiq:0,rec_tmEnt:null,rec_tmDev:null,nap_tmEnt:null,nap_tmDev:null,finalizado:0};
+      const per=prod.periodos[p-1];
+      const ads=parseFloat(per.ads)||0;
+
+      // TM em BRL (convertido de COP)
+      const tmEntBRL = toBRL(d.tmEntLiq)||0;
+      const tmDevBRL = toBRL(d.tmDevLiq)||0;
+      const rec_tmEntBRL = toBRL(d.rec_tmEnt);
+      const rec_tmDevBRL = toBRL(d.rec_tmDev);
+      const nap_tmEntBRL = toBRL(d.nap_tmEnt);
+      const nap_tmDevBRL = toBRL(d.nap_tmDev);
+
+      // Receita Bruta = entregues × TM (sem desconto de devolução aqui)
+      const custoDev      = (d.tcd||0) * cot;
+      const recBruta      = d.ent * tmEntBRL;              // Receita Bruta = só vendas
+      const recLiq        = recBruta - ads - custoDev;     // Líquida = Bruta − ADS − Dev
+      const margem        = recBruta>0 ? recLiq/recBruta : null;
+      const cpa           = d.sh>0 ? ads/d.sh : null;
+      const efet          = (d.ent+d.dev+d.nov)>0 ? d.ent/(d.ent+d.dev+d.nov) : 0;
+      const pctFalta      = Math.max(0,1-(d.pctEnt+d.pctDev+d.pctCan));
+
+      // Acumular para coluna Geral
+      gTotalSh+=d.sh; gEnt+=d.ent; gDev+=d.dev; gCan+=d.can;
+      gNov+=d.nov; gTransit+=d.transit; gProc+=d.proc;
+      gRecBruta+=recBruta; gAds+=ads; gRecLiq+=recLiq;
+
+      return`<div class="ads-col">
+        <div class="ads-col-title">${lbl}</div>
+        <div class="ads-field"><label>ADS (R$)</label>
+          <input type="text" inputmode="decimal" value="${ads>0?ads.toFixed(2).replace('.',','):''}" min="0" step="0.01" placeholder="0,00"
+            oninput="setAdsProd(${prod.id},${p-1},'ads',this.value)"
+            onblur="saveAdsProd(${prod.id},${p-1},'ads',this.value)"></div>
+        <div class="ads-divider"></div>
+        <div style="margin-bottom:6px">
+          <div style="font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">TM do Painel — Período (BRL)</div>
+          <div class="ads-row"><span class="ads-row-lbl">TM Entregues</span><span class="ads-row-val ok">${fBRL(tmEntBRL)}</span></div>
+          <div class="ads-row"><span class="ads-row-lbl">TM Devolução (frete)</span><span class="ads-row-val amber">${fBRL(tmDevBRL)}</span></div>
+          <div style="font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin-top:6px;margin-bottom:4px">Por Método (BRL)</div>
+          <div class="ads-row"><span class="ads-row-lbl">💵 COD — TM Pago</span><span class="ads-row-val ok">${fBRL(rec_tmEntBRL)}</span></div>
+          <div class="ads-row"><span class="ads-row-lbl">💵 COD — TM Dev.</span><span class="ads-row-val amber">${fBRL(rec_tmDevBRL)}</span></div>
+          <div class="ads-row"><span class="ads-row-lbl">💳 Pré-pago — TM Pago</span><span class="ads-row-val ok">${fBRL(nap_tmEntBRL)}</span></div>
+          <div class="ads-row"><span class="ads-row-lbl">💳 Pré-pago — TM Dev.</span><span class="ads-row-val amber">${fBRL(nap_tmDevBRL)}</span></div>
+        </div>
+        <div class="ads-divider"></div>
+        <div class="ads-row"><span class="ads-row-lbl">Total Shopify</span><span class="ads-row-val">${d.sh}</span></div>
+        <div class="ads-row"><span class="ads-row-lbl">Melonn</span><span class="ads-row-val">${d.ml||0}</span></div>
+        <div class="ads-row"><span class="ads-row-lbl">✅ Entregues</span><span class="ads-row-val ok">${d.ent} (${fPct(d.pctEnt)})</span></div>
+        <div class="ads-row"><span class="ads-row-lbl">↩ Devolvidos</span><span class="ads-row-val amber">${d.dev} (${fPct(d.pctDev)})</span></div>
+        <div class="ads-row"><span class="ads-row-lbl">✕ Cancelados</span><span class="ads-row-val warn">${d.can} (${fPct(d.pctCan)})</span></div>
+        <div class="ads-row"><span class="ads-row-lbl">⚑ Novedades</span><span class="ads-row-val">${d.nov}</span></div>
+        <div class="ads-row"><span class="ads-row-lbl">Efetividade</span><span class="ads-row-val blue">${fPct(efet)}</span></div>
+        <div class="ads-divider"></div>
+        <div class="ads-row"><span class="ads-row-lbl">Receita Bruta (BRL)</span><span class="ads-row-val ok">${fBRL(recBruta)}</span></div>
+        <div class="ads-row"><span class="ads-row-lbl">− ADS</span><span class="ads-row-val warn">− ${fBRL(ads)}</span></div>
+        <div class="ads-row"><span class="ads-row-lbl">− Dev. (${d.dev}×${fBRL(tmDevBRL)})</span><span class="ads-row-val amber">− ${fBRL(custoDev)}</span></div>
+        <div class="ads-row"><span class="ads-row-lbl">Receita Líquida (BRL)</span><span class="ads-row-val ${recLiq>=0?'ok':'warn'}">${fBRL(recLiq)}</span></div>
+        <div class="ads-row"><span class="ads-row-lbl">Margem</span><span class="ads-row-val ${margem!=null&&margem>=0?'ok':'warn'}">${fPct(margem)}</span></div>
+        <div class="ads-row"><span class="ads-row-lbl">CPA</span><span class="ads-row-val amber">${fBRL(cpa)}</span></div>
+        <div class="ads-row"><span class="ads-row-lbl">% Falta Finalizar</span><span class="ads-row-val purple">${fPct(pctFalta)}</span></div>
+      </div>`;
+    }).join('');
+
+    // Coluna GERAL — usar geral calculado do painel convertido para BRL
+    const dg=calcP('geral');
+    const gCustoDev  = (dg.tcd||0)*cot;
+    const gRecVendas = gEnt*(toBRL(dg.tmEntLiq)||0);
+    const gRecLiqReal = gRecBruta - gAds - gCustoDev;
+    const gEfet=(gEnt+gDev+gNov)>0?(gEnt/(gEnt+gDev+gNov)):0;
+    const gMargem=gRecBruta>0?gRecLiqReal/gRecBruta:null;
+    const gCPA=gTotalSh>0?gAds/gTotalSh:null;
+    const gPctEnt=gTotalSh?gEnt/gTotalSh:0;
+    const gPctDev=gTotalSh?gDev/gTotalSh:0;
+    const gPctCan=gTotalSh?gCan/gTotalSh:0;
+    const gPctFalta=Math.max(0,1-(gPctEnt+gPctDev+gPctCan));
+    const gTmEntBRL=toBRL(dg.tmEntLiq)||0;
+    const gTmDevBRL=toBRL(dg.tmDevLiq)||0;
+
+    const colGeral=`<div class="ads-col">
+      <div class="ads-col-title">Geral</div>
+      <div class="ads-field"><label>Total ADS (R$)</label>
+        <div style="padding:5px 7px;font-size:12px;font-weight:700;font-family:'DM Mono',monospace;color:var(--rd)">${fBRL(gAds)}</div></div>
+      <div class="ads-divider"></div>
+      <div style="font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">TM do Painel — Geral (BRL)</div>
+      <div class="ads-row"><span class="ads-row-lbl">TM Entregues</span><span class="ads-row-val ok">${fBRL(gTmEntBRL)}</span></div>
+      <div class="ads-row"><span class="ads-row-lbl">TM Devolução</span><span class="ads-row-val amber">${fBRL(gTmDevBRL)}</span></div>
+      <div style="font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin-top:6px;margin-bottom:4px">Por Método (BRL)</div>
+      <div class="ads-row"><span class="ads-row-lbl">💵 COD TM Pago</span><span class="ads-row-val ok">${fBRL(toBRL(dg.rec_tmEnt))}</span></div>
+      <div class="ads-row"><span class="ads-row-lbl">💵 COD TM Dev.</span><span class="ads-row-val amber">${fBRL(toBRL(dg.rec_tmDev))}</span></div>
+      <div class="ads-row"><span class="ads-row-lbl">💳 Pré TM Pago</span><span class="ads-row-val ok">${fBRL(toBRL(dg.nap_tmEnt))}</span></div>
+      <div class="ads-row"><span class="ads-row-lbl">💳 Pré TM Dev.</span><span class="ads-row-val amber">${fBRL(toBRL(dg.nap_tmDev))}</span></div>
+      <div class="ads-divider"></div>
+      <div class="ads-row"><span class="ads-row-lbl">Total Shopify</span><span class="ads-row-val">${gTotalSh}</span></div>
+      <div class="ads-row"><span class="ads-row-lbl">Melonn</span><span class="ads-row-val">${gEnt+gDev+gCan+gNov+gTransit+gProc}</span></div>
+      <div class="ads-row"><span class="ads-row-lbl">✅ Entregues</span><span class="ads-row-val ok">${gEnt} (${fPct(gPctEnt)})</span></div>
+      <div class="ads-row"><span class="ads-row-lbl">↩ Devolvidos</span><span class="ads-row-val amber">${gDev} (${fPct(gPctDev)})</span></div>
+      <div class="ads-row"><span class="ads-row-lbl">✕ Cancelados</span><span class="ads-row-val warn">${gCan} (${fPct(gPctCan)})</span></div>
+      <div class="ads-row"><span class="ads-row-lbl">⚑ Novedades</span><span class="ads-row-val">${gNov}</span></div>
+      <div class="ads-row"><span class="ads-row-lbl">Efetividade</span><span class="ads-row-val blue">${fPct(gEfet)}</span></div>
+      <div class="ads-divider"></div>
+      <div class="ads-row"><span class="ads-row-lbl">Receita Bruta (BRL)</span><span class="ads-row-val ok">${fBRL(gRecBruta)}</span></div>
+      <div class="ads-row"><span class="ads-row-lbl">− ADS</span><span class="ads-row-val warn">− ${fBRL(gAds)}</span></div>
+      <div class="ads-row"><span class="ads-row-lbl">− Dev. (${gDev}×${fBRL(gTmDevBRL)})</span><span class="ads-row-val amber">− ${fBRL(gCustoDev)}</span></div>
+      <div class="ads-row"><span class="ads-row-lbl">Receita Líquida (BRL)</span><span class="ads-row-val ${gRecLiqReal>=0?'ok':'warn'}">${fBRL(gRecLiqReal)}</span></div>
+      <div class="ads-row"><span class="ads-row-lbl">Margem</span><span class="ads-row-val ${gMargem!=null&&gMargem>=0?'ok':'warn'}">${fPct(gMargem)}</span></div>
+      <div class="ads-row"><span class="ads-row-lbl">CPA</span><span class="ads-row-val amber">${fBRL(gCPA)}</span></div>
+      <div class="ads-row"><span class="ads-row-lbl">% Falta Finalizar</span><span class="ads-row-val purple">${fPct(gPctFalta)}</span></div>
+    </div>`;
+
+    return`<div class="ads-prod">
+      <div class="ads-prod-header">
+        <input type="text" value="${prod.nome}" placeholder="Nome do produto / campanha"
+          oninput="setAdsNome(${prod.id},this.value)"
+          onblur="renderAdsProdutos()">
+        <button class="ads-prod-remove" onclick="removeProdutoAds(${prod.id})">✕ Remover</button>
+      </div>
+      <div class="ads-prod-body">${cols}${colGeral}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderAds(){
+  const cot=getCot();
+  // hint já atualizado pela topbar
+
+  // TM: valores internos são em COP, exibir convertidos para BRL
+  if(Object.keys(P).length){
+    const dg=calcP('geral');
+    const tmEntCOP=dg.tmEntLiq||0;
+    const tmDevCOP=dg.tmDevLiq||0;
+    const tmEntBRL=tmEntCOP*cot;
+    const tmDevBRL=tmDevCOP*cot;
+    const el_be=document.getElementById('tm-brl-ent');
+    const el_ce=document.getElementById('tm-cop-ent');
+    const el_bd=document.getElementById('tm-brl-dev');
+    const el_cd=document.getElementById('tm-cop-dev');
+    if(el_be) el_be.textContent=fBRL(tmEntBRL);
+    if(el_ce) el_ce.textContent=Math.round(tmEntCOP).toLocaleString('pt-BR')+' COP';
+    if(el_bd) el_bd.textContent=fBRL(tmDevBRL);
+    if(el_cd) el_cd.textContent=Math.round(tmDevCOP).toLocaleString('pt-BR')+' COP';
+  }
+
+  renderAdsProdutos();
+}
+function switchTab(p,el){
+  active=p==='geral'?'geral':parseInt(p);
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');renderPeriod();
+}
+function switchPag(pag,el){
+  currentPag=pag;
+  document.querySelectorAll('.pag-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');renderPagamento();
+}
+
+// ── RENDER RESULTS ────────────────────────────────────────────────────────────
+function renderResults(){
+  // Period tabs
+  document.getElementById('tabs').innerHTML=['geral',1,2,3,4].map(p=>{
+    const l={geral:'Geral',1:'01–07',2:'08–15',3:'16–23',4:'24–31'}[p];
+    return`<div class="ptab${p===active?' on':''}" onclick="switchTab('${p}',this)">${l}</div>`;
+  }).join('');
+
+  // CRUZAMENTO FIXO
+  const comuns=totalShopify-soShopify.length;
+  const pctMel=totalShopify>0?((comuns/totalShopify)*100).toFixed(1):0;
+  const errProc=soShopify.length;
+  document.getElementById('cross-summary').innerHTML=`
+    <div class="cross-grid">
+      <div class="cross-card">
+        <div class="cross-title">📊 Cruzamento Shopify × Melonn</div>
+        <div class="cross-row"><span class="cross-lbl">Total pedidos Shopify</span><span class="cross-val">${totalShopify.toLocaleString('pt-BR')}</span></div>
+        <div class="cross-row"><span class="cross-lbl">Total pedidos Melonn</span><span class="cross-val">${totalMelonn.toLocaleString('pt-BR')}</span></div>
+        <div class="cross-row"><span class="cross-lbl">Pedidos em ambas plataformas</span><span class="cross-val ok">${comuns.toLocaleString('pt-BR')}</span></div>
+        <div class="cross-row"><span class="cross-lbl">% Melonn sobre Shopify</span><span class="cross-val blue">${pctMel}%</span></div>
+      </div>
+      <div class="cross-card">
+        <div class="cross-title">⚠️ Erros de Processamento</div>
+        <div class="cross-row"><span class="cross-lbl">Na Shopify, não processados na Melonn</span><span class="cross-val ${errProc>0?'warn':'ok'}">${errProc.toLocaleString('pt-BR')}</span></div>
+        <div class="cross-row"><span class="cross-lbl">% sem processamento Melonn</span><span class="cross-val ${errProc>0?'warn':'ok'}">${totalShopify>0?((errProc/totalShopify)*100).toFixed(1):0}%</span></div>
+        <div class="cross-row"><span class="cross-lbl">Só na Melonn (não estão Shopify)</span><span class="cross-val amber">${soMelonn.toLocaleString('pt-BR')}</span></div>
+        <div class="cross-row"><span class="cross-lbl">Frete médio — entregas</span><span class="cross-val blue">${freteMediaEnt>0?fBRL(freteMediaEnt*getCot())+' / pedido':'Sem arquivo'}</span></div>
+        <div class="cross-row"><span class="cross-lbl">Frete médio — devoluções</span><span class="cross-val amber">${freteMediaDev>0?fBRL(freteMediaDev*getCot())+' / pedido':'Sem arquivo'}</span></div>
+      </div>
+    </div>`;
+
+  renderPeriod();
+}
+
+function renderPeriod(){
+  const d=calcP(active);
+
+  // TM CARDS — valores em BRL (COP × cotação)
+  const cot=getCot();
+  const tmEntBRL2 = (d.tmEntLiq||0)*cot;
+  const tmDevBRL2 = (d.tmDevLiq||0)*cot;
+  const tmEnvioBRL = (d.tmEnvio||0)*cot;
+  document.getElementById('tm-row').innerHTML=`
+    <div class="tm-card">
+      <div><div class="tm-lbl">Ticket Médio — Entregues</div>
+        <div class="tm-val ok">${fBRL(tmEntBRL2)}</div>
+        <div class="tm-sub">${d.tmEntV.length} pedido${d.tmEntV.length!==1?'s':''} · Venda − Produto − Frete</div>
+        <div style="font-size:10px;color:var(--t3);margin-top:3px;font-family:'DM Mono',monospace">≈ ${Math.round(d.tmEntLiq||0).toLocaleString('pt-BR')} COP</div>
+      </div><span class="tm-badge tbg">TM Entregues</span>
+    </div>
+    <div class="tm-card">
+      <div><div class="tm-lbl">Ticket Médio — Custo Devolução</div>
+        <div class="tm-val amber">${tmDevBRL2>0?fBRL(tmDevBRL2):'<span style="font-size:16px;color:var(--t3)">Sem dados</span>'}</div>
+        <div class="tm-sub">${d.tmDevV.length} devolução${d.tmDevV.length!==1?'ções':''} · frete real por pedido${d.dev>d.tmDevV.length?` · ${d.dev-d.tmDevV.length} usando média`:''}</div>
+        ${tmDevBRL2>0
+          ?`<div style="font-size:11px;color:var(--am);font-weight:700;margin-top:6px;font-family:'DM Mono',monospace">
+              Total custo dev.: ${fBRL((d.tcd||0)*cot)}
+            </div>
+            <div style="font-size:10px;color:var(--t3);margin-top:2px;font-family:'DM Mono',monospace">
+              ${d.dev} pedidos × ${fBRL(tmDevBRL2)} · ≈ ${Math.round(d.tmDevLiq||0).toLocaleString('pt-BR')} COP
+            </div>`
+          :`<div style="font-size:10px;color:var(--t3);margin-top:3px">Sem arquivo de frete ou sem devoluções</div>`}
+      </div><span class="tm-badge tba">TM Devolução</span>
+    </div>
+    <div class="tm-card">
+      <div><div class="tm-lbl">Custo Médio de Envio</div>
+        <div class="tm-val blue">${fBRL(tmEnvioBRL)}</div>
+        <div class="tm-sub">${freteMediaEnt>0?'calculado via arquivo de frete':'sem arquivo de frete carregado'}</div>
+        ${freteMediaDev>0?`<div style="font-size:10px;color:var(--am);margin-top:3px;font-family:'DM Mono',monospace">Média dev.: ${fBRL(freteMediaDev*cot)}</div>`:''}
+      </div><span class="tm-badge tbb">TM Envio</span>
+    </div>`;
+
+  // EFETIVIDADE
+  const efOk=d.efet>=0.5;
+  document.getElementById('sec-efet').innerHTML=`
+    <div class="sec-lbl">Taxa de efetividade</div>
+    <div class="efet-box ${efOk?'':'bad'}">
+      <div>
+        <div class="efet-num ${efOk?'':'bad'}">${fPct(d.efet)}</div>
+        <div class="efet-pills">
+          <span class="pill ok">✅ Entregues: ${d.ent}</span>
+          <span class="pill amber">↩ Devoluções: ${d.dev}</span>
+          <span class="pill warn">✕ Cancelados: ${d.can}</span>
+          <span class="pill purple">⚑ Novedades: ${d.nov}</span>
+          <span class="pill cyan">🚚 Em trânsito: ${d.transit}</span>
+          <span class="pill blue">📦 Em processo: ${d.proc}</span>
+        </div>
+      </div>
+      <div class="efet-formula">
+        (Entregues ÷ Finalizados) × ((Total − Cancelados) ÷ Total)<br>
+        Finalizados = Entregues + Devoluções + Cancelados<br>
+        = (${d.ent} ÷ ${d.finalizado}) × (${d.sh}−${d.can}) ÷ ${d.sh}
+      </div>
+    </div>`;
+
+  // ── BLOCO FINANCEIRO PRINCIPAL ──────────────────────────────────────────────
+  // Receita Bruta = total entregues × TM entregues
+  // ADS = valor digitado pelo usuário na aba ADS para este período
+  // Receita Líquida = Receita Bruta − ADS
+  // Margem de Lucro = Receita Líquida / Receita Bruta
+  // CPA = ADS / total pedidos Shopify
+  // Total operação falta finalizar = 100% − (% entregue + % devolução + % cancelado)
+  // Total unidades para finalizar = total Shopify × % falta finalizar
+
+  const perIdx = active==='geral'?0:active;
+  const ads    = active==='geral'?getTotalAds():getAds(active);
+  const cotF   = getCot();
+
+  // Valores em BRL
+  const tmEntBRL        = (d.tmEntLiq||0)*cotF;
+  const tmDevBRL        = (d.tmDevLiq||0)*cotF;
+  const recBruta        = d.ent * tmEntBRL;              // Receita Bruta = entregues × TM entregues
+  const totalCustoDev   = (d.tcd||0) * cotF;             // Custo total devoluções (soma real dos fretes)
+  const tvBRL           = (d.tv||0)*cotF;
+  const tcpBRL          = (d.tcp||0)*cotF;
+  const tceBRL          = (d.tce||0)*cotF;
+  const tlBRL           = (d.tl||0)*cotF;
+  const recLiq          = recBruta - ads - totalCustoDev; // Receita Líquida = Bruta − ADS − Devoluções
+  const margem          = recBruta>0 ? recLiq/recBruta : null;
+  const cpa             = d.sh>0 ? ads/d.sh : null;
+  const pctFinalizado   = d.pctEnt + d.pctDev + d.pctCan;
+  const pctFaltaFinalizar = Math.max(0, 1 - pctFinalizado);
+  const unidsFaltaFinalizar = Math.round(d.sh * pctFaltaFinalizar);
+
+  document.getElementById('sec-financeiro').innerHTML=`
+    <div class="sec-lbl">💰 Métricas Financeiras — ${active==='geral'?'Geral':pLbl(active)}</div>
+
+    <!-- Linha 1: Receita Bruta + deduções -->
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;margin-bottom:8px;align-items:stretch">
+      <div class="mc" style="border-left:3px solid var(--gr)">
+        <div class="mc-l">Receita Bruta (BRL)</div>
+        <div class="mc-v ok">${fBRL(recBruta)}</div>
+        <div class="mc-s">${d.ent} entregues × TM ${fBRL(tmEntBRL)}</div>
+      </div>
+      <div class="mc" style="border-left:3px solid var(--rd);background:var(--rdb)">
+        <div class="mc-l" style="color:var(--rd)">− ADS</div>
+        <div class="mc-v warn">${fBRL(ads)}</div>
+        <div class="mc-s">${ads===0?'⚠️ Preencha na aba ADS':'aba ADS'}</div>
+      </div>
+      <div class="mc" style="border-left:3px solid var(--am);background:var(--amb)">
+        <div class="mc-l" style="color:var(--am)">− Custo Devoluções</div>
+        <div class="mc-v amber">${fBRL(totalCustoDev)}</div>
+        <div class="mc-s">${d.dev} devol. × ${fBRL(tmDevBRL)}</div>
+      </div>
+      <div class="mc" style="border-left:3px solid ${recLiq>=0?'var(--gr)':'var(--rd)'};background:${recLiq>=0?'var(--grb)':'var(--rdb)'}">
+        <div class="mc-l" style="color:${recLiq>=0?'var(--gr)':'var(--rd)'}">= Receita Líquida</div>
+        <div class="mc-v ${recLiq>=0?'ok':'warn'}">${fBRL(recLiq)}</div>
+        <div class="mc-s">Bruta − ADS − Devoluções</div>
+      </div>
+    </div>
+
+    <!-- Linha 2: métricas derivadas -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">
+      <div class="mc" style="border-left:3px solid ${margem!=null&&margem>=0?'var(--gr)':'var(--rd)'}">
+        <div class="mc-l">Margem de Lucro</div>
+        <div class="mc-v ${margem!=null&&margem>=0?'ok':'warn'}">${fPct(margem)}</div>
+        <div class="mc-s">Receita Líquida ÷ Bruta</div>
+      </div>
+      <div class="mc" style="border-left:3px solid var(--am)">
+        <div class="mc-l">CPA</div>
+        <div class="mc-v amber">${fBRL(cpa)}</div>
+        <div class="mc-s">ADS ÷ ${d.sh} pedidos Shopify</div>
+      </div>
+      <div class="mc" style="border-left:3px solid var(--bl)">
+        <div class="mc-l">TM Entregues (BRL)</div>
+        <div class="mc-v blue">${fBRL(tmEntBRL)}</div>
+        <div class="mc-s">${d.tmEntV.length} pedidos · ≈ ${Math.round(d.tmEntLiq||0).toLocaleString('pt-BR')} COP</div>
+      </div>
+      <div class="mc" style="border-left:3px solid var(--am)">
+        <div class="mc-l">TM Devolução (BRL)</div>
+        <div class="mc-v amber">${tmDevBRL>0?fBRL(tmDevBRL):'—'}</div>
+        <div class="mc-s">${d.tmDevV.length} devol. com valor real · ${d.dev>d.tmDevV.length?d.dev-d.tmDevV.length+' usando média':''}</div>
+      </div>
+    </div>
+
+    <!-- Linha 3: operação -->
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+      <div class="mc" style="border-left:3px solid var(--pu)">
+        <div class="mc-l">% Operação a Finalizar</div>
+        <div class="mc-v purple">${fPct(pctFaltaFinalizar)}</div>
+        <div class="mc-s">100% − (${fPct(d.pctEnt)} ent + ${fPct(d.pctDev)} dev + ${fPct(d.pctCan)} can)</div>
+      </div>
+      <div class="mc" style="border-left:3px solid var(--pu)">
+        <div class="mc-l">Unidades p/ Finalizar</div>
+        <div class="mc-v purple">${unidsFaltaFinalizar}</div>
+        <div class="mc-s">${d.sh} pedidos × ${fPct(pctFaltaFinalizar)}</div>
+      </div>
+    </div>`;
+
+  // PEDIDOS — inclui detalhes de cancelamentos/devoluções inline
+  document.getElementById('sec-ped').innerHTML=`
+    <div class="sec-lbl">Pedidos — ${active==='geral'?'Geral':pLbl(active)}</div>
+    <div class="m8">
+      <div class="mc"><div class="mc-l">Total Shopify</div><div class="mc-v">${d.sh}</div><div class="mc-s">pedidos gerados</div></div>
+      <div class="mc"><div class="mc-l">Na Melonn</div><div class="mc-v ${d.ml<d.sh?'amber':'ok'}">${d.ml}</div><div class="mc-s">${d.sh>0?((d.ml/d.sh)*100).toFixed(1)+'% do total':'—'}</div></div>
+      <div class="mc"><div class="mc-l">✅ Entregues</div><div class="mc-v ok">${d.ent}</div><div class="mc-s ok">${fPct(d.pctEnt)}</div></div>
+      <div class="mc"><div class="mc-l">↩ Devoluções</div><div class="mc-v amber">${d.dev}</div><div class="mc-s amber">${fPct(d.pctDev)} · Canceled + Novedad</div></div>
+      <div class="mc"><div class="mc-l">✕ Cancelados</div><div class="mc-v warn">${d.can}</div><div class="mc-s warn">${fPct(d.pctCan)} · sem novedad</div></div>
+      <div class="mc"><div class="mc-l">⚑ Novedades</div><div class="mc-v purple">${d.nov}</div><div class="mc-s">${fPct(d.pctNov)} · delivery not possible</div></div>
+      <div class="mc"><div class="mc-l">🚚 Em trânsito</div><div class="mc-v cyan">${d.transit}</div><div class="mc-s">shipped in transit</div></div>
+      <div class="mc"><div class="mc-l">📦 Em processo</div><div class="mc-v blue">${d.proc}</div><div class="mc-s">packed / on hold</div></div>
+    </div>`;
+
+  // CANCELAMENTOS removido — informações já estão nos cards acima
+
+  // SKU
+  const skuCards=Object.entries(d.skuT).filter(([,q])=>q>0).map(([sku,qty])=>`
+    <div class="sku-card"><div class="sk-name">${SKU_NAME[sku]||sku}</div><div class="sk-qty">${qty}</div><div class="sk-sub">unidades</div></div>`).join('');
+  document.getElementById('sec-sku').innerHTML=`
+    <div class="sec-lbl">📦 Unidades por SKU</div>
+    <div class="sku-cards">${skuCards||'<span style="font-size:12px;color:var(--t3)">Sem dados</span>'}</div>`;
+
+  // ENVIO
+  const comFrete=allRows.filter(r=>(active==='geral'||r.per===active)&&r.hasFrete).length;
+  const totalR=allRows.filter(r=>(active==='geral'||r.per===active)).length;
+  document.getElementById('sec-env').innerHTML=`
+    <div class="sec-lbl">🚚 Custo de Envio</div>
+    <div class="m4">
+      <div class="mc"><div class="mc-l">Com frete individual</div><div class="mc-v ok">${comFrete}</div><div class="mc-s">cruzado pelo nº do pedido</div></div>
+      <div class="mc"><div class="mc-l">Usando frete médio</div><div class="mc-v amber">${totalR-comFrete}</div><div class="mc-s">não encontrado no arquivo · marcado com *</div></div>
+      <div class="mc"><div class="mc-l">Média frete entregas</div><div class="mc-v blue">${fBRL(freteMediaEnt*cotF)}</div><div class="mc-s">Delivered to buyer</div></div>
+      <div class="mc"><div class="mc-l">Média frete devoluções</div><div class="mc-v amber">${fBRL(freteMediaDev*cotF)}</div><div class="mc-s">Canceled no arquivo de frete</div></div>
+    </div>`;
+
+  // DIVERGÊNCIAS
+  const divList=active==='geral'?soShopify:allRows.filter(r=>r.per===active&&r.st==='SEM_MELONN').map(r=>r.name);
+  document.getElementById('sec-div').innerHTML=`
+    <div class="sec-lbl">⚠️ Pedidos Shopify sem registro na Melonn</div>
+    ${divList.length===0
+      ?'<div class="divs-ok">✓ Todos os pedidos estão registrados na Melonn.</div>'
+      :`<div style="font-size:11px;color:var(--t3);margin-bottom:6px">${divList.length} pedido(s) — erro de processamento</div><div class="divs-list">${divList.map(n=>`<div class="div-row"><b>${n}</b><span class="tag tgr">Sem Melonn</span></div>`).join('')}</div>`}`;
+
+  renderTable();
+}
+
+// ── RENDER PAGAMENTO ──────────────────────────────────────────────────────────
+function renderPagamento(){
+  const pag=currentPag;
+
+  // Card de um método de pagamento com TM incluídos
+  function pagCard(title, total, ent, dev, can, nov, transit, proc, tmEnt, tmDev, color, compact=false){
+    const ef=((ent+dev+nov)>0)?(ent/(ent+dev+nov)):0;
+    const rows=[
+      ['✅ Entregues',    ent,     'var(--gr)'],
+      ['↩ Devoluções',   dev,     'var(--am)'],
+      ['✕ Cancelados',   can,     'var(--rd)'],
+      ['⚑ Novedades',    nov,     'var(--pu)'],
+      ['🚚 Em trânsito', transit, 'var(--cy)'],
+      ['📦 Em processo', proc,    'var(--bl)'],
+    ];
+    return`<div class="pag-stat-card${compact?' pag-compact':''}">
+      <div class="pag-stat-title">${title}</div>
+      <div class="pag-stat-big" style="color:${color};font-size:${compact?'20px':'30px'}">${total.toLocaleString('pt-BR')}</div>
+      <div class="pag-stat-sub">pedidos · efetividade: <b style="color:${ef>=0.5?'var(--gr)':'var(--rd)'}">${fPct(ef)}</b></div>
+      <div style="display:flex;gap:8px;margin:8px 0;flex-wrap:wrap">
+        <div style="background:var(--grb);border:1px solid var(--grl);border-radius:6px;padding:5px 10px;flex:1;min-width:100px">
+          <div style="font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">TM Entregues</div>
+          <div style="font-size:${compact?'13px':'15px'};font-weight:700;color:var(--gr);font-family:'DM Mono',monospace">${fBRL(tmEnt)}</div>
+        </div>
+        <div style="background:var(--amb);border:1px solid var(--aml);border-radius:6px;padding:5px 10px;flex:1;min-width:100px">
+          <div style="font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">TM Devolução (frete)</div>
+          <div style="font-size:${compact?'13px':'15px'};font-weight:700;color:var(--am);font-family:'DM Mono',monospace">${fBRL(tmDev)}</div>
+        </div>
+      </div>
+      <div class="pag-breakdown">
+        ${rows.map(([l,v,c])=>`
+          <div class="pag-br-row">
+            <span class="pag-br-lbl">${l}</span>
+            <span class="pag-br-val">${v} <span style="color:var(--t3);font-weight:400">${total>0?fPct(v/total):'—'}</span></span>
+          </div>
+          <div class="pag-bar-wrap">
+            <div class="pag-bar-bg"><div class="pag-bar-fill" style="width:${total>0?(v/total*100).toFixed(1):0}%;background:${c}"></div></div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Bloco de um período
+  function periodoBlock(perKey, perLabel){
+    const d=calcP(perKey);
+    const c=getCot();
+    let html='';
+    const compact=perKey!=='geral';
+
+    if(pag==='todos'||pag==='Recaudo en efectivo'){
+      html+=pagCard('💵 Recaudo en efectivo (COD)',
+        d.rec_total||0,d.rec_ent||0,d.rec_dev||0,d.rec_can||0,d.rec_nov||0,d.rec_transit||0,d.rec_proc||0,
+        (d.rec_tmEnt||0)*c,(d.rec_tmDev||0)*c,'var(--am)',compact);
+    }
+    if(pag==='todos'||pag==='No aplica'){
+      html+=pagCard('💳 No aplica (Pré-pago)',
+        d.nap_total||0,d.nap_ent||0,d.nap_dev||0,d.nap_can||0,d.nap_nov||0,d.nap_transit||0,d.nap_proc||0,
+        (d.nap_tmEnt||0)*c,(d.nap_tmDev||0)*c,'var(--bl)',compact);
+    }
+    if(pag==='todos'){
+      html+=pagCard('📊 Total Melonn',
+        d.ml||0,d.ent,d.dev,d.can,d.nov,d.transit,d.proc,
+        (d.tmEntLiq||0)*c,(d.tmDevLiq||0)*c,'var(--t)',compact);
+    }
+
+    const cols=pag==='todos'?3:1;
+    return`<div class="pag-period-block">
+      <div class="pag-period-title">${perLabel}</div>
+      <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:10px">${html}</div>
+    </div>`;
+  }
+
+  let out='';
+  // GERAL sempre primeiro
+  out+=periodoBlock('geral','📊 Geral — todos os períodos');
+  // Períodos separados
+  out+=`<div class="pag-periods-grid">`;
+  [[1,'01 – 07'],[2,'08 – 15'],[3,'16 – 23'],[4,'24 – 31']].forEach(([p,lbl])=>{
+    const d=calcP(p);
+    if((d.rec_total||0)+(d.nap_total||0)+(d.ml||0)>0)
+      out+=periodoBlock(p,`📅 Período ${lbl}`);
+  });
+  out+=`</div>`;
+
+  document.getElementById('pag-content').innerHTML=out;
+}
+
+// ── TABLE ─────────────────────────────────────────────────────────────────────
+function renderTable(){
+  const q=(document.getElementById('srch').value||'').toLowerCase();
+  const fst=document.getElementById('flt-st').value;
+  const fper=document.getElementById('flt-per').value;
+  const fpag=document.getElementById('flt-pag').value;
+  let rows=allRows;
+  if(active!=='geral') rows=rows.filter(r=>r.per===active);
+  if(fst) rows=rows.filter(r=>r.st===fst);
+  if(fper) rows=rows.filter(r=>r.per===parseInt(fper));
+  if(fpag) rows=rows.filter(r=>r.recaudo===fpag);
+  if(q) rows=rows.filter(r=>r.name.toLowerCase().includes(q)||r.client.toLowerCase().includes(q));
+  document.getElementById('tbl-ft').textContent=rows.length+' pedido'+(rows.length!==1?'s':'')+' exibido'+(rows.length!==1?'s':'');
+  const sk=o=>Object.entries(o).filter(([,q])=>q>0).map(([s,q])=>`${s}×${q}`).join(' ');
+  const ct=getCot();
+  document.getElementById('tbody').innerHTML=rows.map(r=>`<tr>
+    <td class="mono" style="font-weight:600">${r.name}</td>
+    <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis">${r.client}</td>
+    <td>${pLbl(r.per)}</td>
+    <td>${stTag(r.st)}</td>
+    <td style="font-size:11px;color:var(--t2)">${r.recaudo||'—'}</td>
+    <td class="mono ok">${fBRL(r.tv*ct)}</td>
+    <td class="mono warn">${r.cp>0?fBRL(r.cp*ct):'—'}</td>
+    <td class="mono amber" title="${r.hasFrete?'Frete do arquivo':'Frete médio'}">${fBRL(r.ce*ct)}${r.hasFrete?'':' *'}</td>
+    <td class="mono" style="font-weight:700;color:${r.liq>=0?'var(--gr)':'var(--rd)'}">${fBRL(r.liq*ct)}</td>
+    <td style="font-size:10px;color:var(--t3);font-family:'DM Mono',monospace">${sk(r.skus)}</td>
+    <td class="mono" style="color:var(--t3)">${fmtDate(r.createdAt)}</td>
+  </tr>`).join('');
+}
+
+// ── EXPORT CSV ────────────────────────────────────────────────────────────────
+function exportCsv(){
+  const q=(document.getElementById('srch').value||'').toLowerCase();
+  const fst=document.getElementById('flt-st').value;
+  const fper=document.getElementById('flt-per').value;
+  const fpag=document.getElementById('flt-pag').value;
+  let rows=allRows;
+  if(active!=='geral') rows=rows.filter(r=>r.per===active);
+  if(fst) rows=rows.filter(r=>r.st===fst);
+  if(fper) rows=rows.filter(r=>r.per===parseInt(fper));
+  if(fpag) rows=rows.filter(r=>r.recaudo===fpag);
+  if(q) rows=rows.filter(r=>r.name.toLowerCase().includes(q)||r.client.toLowerCase().includes(q));
+  const hdr='Pedido,Cliente,Período,Status Melonn,Pagamento,Total Venda,Custo Produto,Custo Envio,Ticket Líquido,SKUs,Data';
+  const sk=o=>Object.entries(o).filter(([,q])=>q>0).map(([s,q])=>`${s}x${q}`).join(' / ');
+  const csv=hdr+'\n'+rows.map(r=>[r.name,r.client,pLbl(r.per),stLbl(r.st),r.recaudo||'',
+    r.tv.toFixed(2),r.cp.toFixed(2),r.ce.toFixed(2),r.liq.toFixed(2),sk(r.skus),fmtDate(r.createdAt)]
+    .map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));a.download='pedidos_melonn.csv';a.click();
+}
+</script>
+</body>
+</html>
